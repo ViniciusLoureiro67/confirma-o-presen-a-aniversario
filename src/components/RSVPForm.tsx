@@ -52,6 +52,18 @@ export function RSVPForm() {
   const { fields, append, remove } = useFieldArray({ control, name: 'convidados' });
   const vai = watch('vaiComparecer');
 
+  const addConvidado = (tipo: 'adulto' | 'crianca') => {
+    append({ tipo, nome: '', idade: undefined });
+    setTimeout(() => {
+      const items = document.querySelectorAll<HTMLElement>('[data-guest-card]');
+      const last = items[items.length - 1];
+      if (!last) return;
+      last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = last.querySelector<HTMLInputElement>('input');
+      input?.focus({ preventScroll: true });
+    }, 100);
+  };
+
   const onSubmit = async (values: RsvpFormValues) => {
     setStatus('loading');
     setErrorMsg(null);
@@ -169,7 +181,7 @@ export function RSVPForm() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => append({ tipo: 'adulto', nome: '', idade: undefined })}
+                      onClick={() => addConvidado('adulto')}
                     >
                       <User className="h-4 w-4" />
                       + Adulto
@@ -178,7 +190,7 @@ export function RSVPForm() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => append({ tipo: 'crianca', nome: '', idade: undefined })}
+                      onClick={() => addConvidado('crianca')}
                     >
                       <Baby className="h-4 w-4" />
                       + Criança
@@ -192,10 +204,11 @@ export function RSVPForm() {
                       return (
                         <motion.div
                           key={f.id}
+                          data-guest-card
                           initial={{ opacity: 0, y: -6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -6 }}
-                          className="rounded-2xl border border-rose-100 bg-white/60 p-4 space-y-3"
+                          className="rounded-2xl border border-rose-100 bg-white/60 p-4 space-y-3 scroll-mt-24"
                         >
                           <div className="flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-lilac-500">
