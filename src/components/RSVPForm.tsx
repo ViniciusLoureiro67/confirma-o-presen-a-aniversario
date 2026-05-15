@@ -201,6 +201,10 @@ export function RSVPForm() {
                     {fields.map((f, idx) => {
                       const tipo = watch(`convidados.${idx}.tipo`);
                       const isCrianca = tipo === 'crianca';
+                      const tipoIdx =
+                        fields
+                          .slice(0, idx)
+                          .filter((x) => x.tipo === tipo).length + 1;
                       return (
                         <motion.div
                           key={f.id}
@@ -217,7 +221,7 @@ export function RSVPForm() {
                               ) : (
                                 <User className="h-3.5 w-3.5" />
                               )}
-                              {isCrianca ? 'Criança' : 'Adulto'} {idx + 1}
+                              {isCrianca ? 'Criança' : 'Adulto'} {tipoIdx}
                             </span>
                             <button
                               type="button"

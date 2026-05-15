@@ -42,7 +42,7 @@
   }
 
   .section-pad {
-    @apply px-5 py-16 sm:py-20 md:py-24;
+    @apply px-5 py-10 sm:py-16 md:py-20;
   }
 
   .container-narrow {
