@@ -14,6 +14,12 @@
  *  G: Idade
  *  H: Paga Buffet (adultos sempre SIM, crianças idade > 6)
  *  I: Observações
+ *
+ * Regras de gravação:
+ *  - Linha "Responsável": sempre gravada (1 por submissão), com
+ *    D = SIM/NÃO conforme `responsavelVai` e H em branco quando NÃO.
+ *  - Linhas "Adulto"/"Criança": gravadas para cada item em `convidados`,
+ *    sempre com D = SIM (a lista representa quem VAI à festa).
  */
 
 const NOTIFICATION_EMAIL = 'kayronedias1482@gmail.com';
@@ -31,65 +37,53 @@ function doPost(e) {
     const timestamp = new Date();
     const nomeAdulto = String(payload.nomeAdulto || '').trim();
     const telefone = String(payload.telefone || '').trim();
-    const vaiComparecer = payload.vaiComparecer === true;
+    // aceita responsavelVai (novo) ou vaiComparecer (legado) por compatibilidade
+    const responsavelVai =
+      payload.responsavelVai === true || payload.vaiComparecer === true;
     const observacoes = String(payload.observacoes || '').trim();
     const convidados = Array.isArray(payload.convidados) ? payload.convidados : [];
 
     const rowsToAppend = [];
 
-    if (vaiComparecer) {
-      rowsToAppend.push([
-        timestamp,
-        nomeAdulto,
-        telefone,
-        'SIM',
-        'Responsável',
-        nomeAdulto,
-        '',
-        'SIM',
-        observacoes,
-      ]);
+    rowsToAppend.push([
+      timestamp,
+      nomeAdulto,
+      telefone,
+      responsavelVai ? 'SIM' : 'NÃO',
+      'Responsável',
+      nomeAdulto,
+      '',
+      responsavelVai ? 'SIM' : '',
+      observacoes,
+    ]);
 
-      convidados.forEach(function (c) {
-        const tipo = c.tipo === 'crianca' ? 'Criança' : 'Adulto';
-        const idade = c.tipo === 'crianca' ? Number(c.idade) : null;
-        let pagaBuffet;
-        if (c.tipo === 'crianca') {
-          pagaBuffet = !isNaN(idade) && idade > 6 ? 'SIM' : 'NÃO';
-        } else {
-          pagaBuffet = 'SIM';
-        }
-        rowsToAppend.push([
-          timestamp,
-          nomeAdulto,
-          telefone,
-          'SIM',
-          tipo,
-          String(c.nome || '').trim(),
-          idade !== null && !isNaN(idade) ? idade : '',
-          pagaBuffet,
-          observacoes,
-        ]);
-      });
-    } else {
+    convidados.forEach(function (c) {
+      const tipo = c.tipo === 'crianca' ? 'Criança' : 'Adulto';
+      const idade = c.tipo === 'crianca' ? Number(c.idade) : null;
+      let pagaBuffet;
+      if (c.tipo === 'crianca') {
+        pagaBuffet = !isNaN(idade) && idade > 6 ? 'SIM' : 'NÃO';
+      } else {
+        pagaBuffet = 'SIM';
+      }
       rowsToAppend.push([
         timestamp,
         nomeAdulto,
         telefone,
-        'NÃO',
-        'Responsável',
-        nomeAdulto,
-        '',
-        '',
+        'SIM',
+        tipo,
+        String(c.nome || '').trim(),
+        idade !== null && !isNaN(idade) ? idade : '',
+        pagaBuffet,
         observacoes,
       ]);
-    }
+    });
 
     rowsToAppend.forEach(function (row) {
       sheet.appendRow(row);
     });
 
-    sendNotificationEmail_(payload, rowsToAppend.length);
+    sendNotificationEmail_(payload, responsavelVai, convidados, rowsToAppend.length);
 
     return jsonResponse_({ success: true });
   } catch (err) {
@@ -108,12 +102,11 @@ function jsonResponse_(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function sendNotificationEmail_(payload, totalRows) {
+function sendNotificationEmail_(payload, responsavelVai, convidados, totalRows) {
   if (!NOTIFICATION_EMAIL) return;
 
   try {
-    const vai = payload.vaiComparecer ? 'SIM' : 'NÃO';
-    const convidados = Array.isArray(payload.convidados) ? payload.convidados : [];
+    const vai = responsavelVai ? 'SIM' : 'NÃO';
     const adultos = convidados.filter(function (c) { return c.tipo === 'adulto'; });
     const criancas = convidados.filter(function (c) { return c.tipo === 'crianca'; });
 
@@ -129,7 +122,7 @@ function sendNotificationEmail_(payload, totalRows) {
       'Nova confirmação recebida:\n\n' +
       'Responsável: ' + payload.nomeAdulto + '\n' +
       'Telefone: ' + payload.telefone + '\n' +
-      'Vai comparecer: ' + vai + '\n\n' +
+      'Responsável vai: ' + vai + '\n\n' +
       'Outros adultos:\n' + listaAdultos + '\n\n' +
       'Crianças:\n' + listaCriancas + '\n\n' +
       'Observações: ' + (payload.observacoes || '(nenhuma)') + '\n\n' +
