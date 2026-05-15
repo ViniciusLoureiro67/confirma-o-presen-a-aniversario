@@ -1,13 +1,13 @@
 const TITLE = '✨ 7 anos da Isabela • Baile da Bela e a Fera';
 const LOCATION =
-  'Planeja Mágico, R. Dr. Alfredo Oiticica, 84, Pitanguinha, Maceió, AL, 57052-230';
+  'Planeta Mágico, R. Dr. Alfredo Oiticica, 84, Pitanguinha, Maceió, AL, 57052-230';
 const DETAILS = [
   '👑 Você está convidado para o baile real de 7 anos da Isabela!',
   '',
   '🌹 Tema: A Bela e a Fera',
   '📅 Data: sábado, 23 de maio de 2026',
   '🕖 Horário: a partir das 19h',
-  '📍 Local: Planeja Mágico (Pitanguinha, Maceió/AL)',
+  '📍 Local: Planeta Mágico (Pitanguinha, Maceió/AL)',
   '',
   '✨ A Bela convida todas as princesas para virem de fantasia ao baile real.',
   'Observação: a fantasia da princesa Bela é exclusiva da aniversariante.',

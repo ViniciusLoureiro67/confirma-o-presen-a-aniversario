@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { calendarUrl } from '@/lib/calendar';
 
 const ADDRESS =
-  'Planeja Mágico, R. Dr. Alfredo Oiticica, 84, Pitanguinha, Maceió, AL, 57052-230';
+  'Planeta Mágico, R. Dr. Alfredo Oiticica, 84, Pitanguinha, Maceió, AL, 57052-230';
 const MAPS_URL =
   'https://www.google.com/maps/search/?api=1&query=' +
   encodeURIComponent(ADDRESS);
@@ -46,7 +46,7 @@ export function Location() {
                   <MapPin className="h-4 w-4" />
                 </span>
                 <div>
-                  <p className="font-semibold text-slate-800">Planeja Mágico</p>
+                  <p className="font-semibold text-slate-800">Planeta Mágico</p>
                   <p className="text-sm text-slate-600 leading-relaxed">
                     R. Dr. Alfredo Oiticica, 84, Pitanguinha
                     <br />

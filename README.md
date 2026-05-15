@@ -6,7 +6,7 @@ animações em Framer Motion. Backend serverless em Google Apps Script gravando
 diretamente em uma Google Sheet.
 
 > Demo: hospedado na Vercel.
-> Tema: A Bela e a Fera · Data: 23/05/2026 · Local: Planeja Mágico (Maceió/AL)
+> Tema: A Bela e a Fera · Data: 23/05/2026 · Local: Planeta Mágico (Maceió/AL)
 
 ---
 

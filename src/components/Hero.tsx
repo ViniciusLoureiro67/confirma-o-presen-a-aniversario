@@ -60,7 +60,7 @@ export function Hero() {
         >
           <InfoPill icon={<CalendarHeart className="h-4 w-4" />} label="Sábado, 23 de maio" />
           <InfoPill icon={<Clock className="h-4 w-4" />} label="19h" />
-          <InfoPill icon={<MapPin className="h-4 w-4" />} label="Planeja Mágico" />
+          <InfoPill icon={<MapPin className="h-4 w-4" />} label="Planeta Mágico" />
         </motion.div>
 
         <motion.div
