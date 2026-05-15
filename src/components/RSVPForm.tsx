@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, CalendarPlus } from 'lucide-react';
 
 import { rsvpSchema, toPayload, type RsvpFormValues, type RsvpPayload } from '@/lib/schema';
 import { submitRsvp } from '@/lib/api';
+import { calendarUrl } from '@/lib/calendar';
 import { maskPhone, sanitizeName, sanitizeAge } from '@/lib/utils';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
@@ -303,6 +304,16 @@ export function RSVPForm() {
             </Button>
           </form>
         </Card>
+
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <p className="text-sm text-slate-600">Já quer separar a data?</p>
+          <Button asChild variant="secondary" size="lg">
+            <a href={calendarUrl()} target="_blank" rel="noopener noreferrer">
+              <CalendarPlus className="h-4 w-4" />
+              Adicionar à agenda
+            </a>
+          </Button>
+        </div>
       </motion.div>
     </section>
   );
