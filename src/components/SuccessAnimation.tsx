@@ -6,6 +6,17 @@ import { Button } from './ui/button';
 import { calendarUrl } from '@/lib/calendar';
 
 export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
+  const firstName = payload.nomeAdulto.split(' ')[0];
+  const guestsCount = payload.convidados.length;
+
+  const title = payload.responsavelVai
+    ? 'Presença confirmada! 🎉'
+    : 'Confirmação enviada! 💛';
+
+  const message = payload.responsavelVai
+    ? `Obrigado, ${firstName}! Recebemos sua confirmação. Mal podemos esperar para te ver no baile. 💛`
+    : `Obrigado, ${firstName}! Cadastramos quem você confirmou. 💛`;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -28,7 +39,7 @@ export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
           transition={{ delay: 0.45 }}
           className="mt-6 text-3xl sm:text-4xl text-slate-800"
         >
-          Presença confirmada! 🎉
+          {title}
         </motion.h3>
 
         <motion.p
@@ -37,15 +48,14 @@ export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
           transition={{ delay: 0.6 }}
           className="mt-2 text-slate-600"
         >
-          Obrigado, <strong>{payload.nomeAdulto.split(' ')[0]}</strong>! Recebemos sua
-          confirmação. Mal podemos esperar para te ver no baile. 💛
+          {message}
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.75 }}
-          className="mt-6 rounded-2xl bg-rose-50/80 p-5 text-left text-sm text-slate-700 space-y-2"
+          className="mt-6 space-y-2 rounded-2xl bg-rose-50/80 p-5 text-left text-sm text-slate-700"
         >
           <p className="flex items-center gap-2 font-medium text-rose-500">
             <Sparkles className="h-4 w-4" />
@@ -55,12 +65,14 @@ export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
             <strong>Telefone:</strong> {payload.telefone}
           </p>
           <p>
-            <strong>Vai:</strong> {payload.vaiComparecer ? 'Sim' : 'Não'}
+            <strong>Você vai:</strong> {payload.responsavelVai ? 'Sim' : 'Não'}
           </p>
-          {payload.vaiComparecer && payload.convidados.length > 0 && (
+          {guestsCount > 0 && (
             <div>
-              <strong>Convidados:</strong>
-              <ul className="mt-1 list-disc list-inside text-slate-600">
+              <strong>
+                {payload.responsavelVai ? 'Outras pessoas:' : 'Pessoas confirmadas:'}
+              </strong>
+              <ul className="mt-1 list-inside list-disc text-slate-600">
                 {payload.convidados.map((c, i) => (
                   <li key={i}>
                     {c.nome}
@@ -79,7 +91,7 @@ export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
           )}
         </motion.div>
 
-        {payload.vaiComparecer && (
+        {payload.responsavelVai && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

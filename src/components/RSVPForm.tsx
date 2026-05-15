@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,12 +9,14 @@ import {
   CalendarPlus,
   User,
   Baby,
+  Check,
+  Ban,
 } from 'lucide-react';
 
 import { rsvpSchema, toPayload, type RsvpFormValues, type RsvpPayload } from '@/lib/schema';
 import { submitRsvp } from '@/lib/api';
 import { calendarUrl } from '@/lib/calendar';
-import { maskPhone, sanitizeName, sanitizeAge } from '@/lib/utils';
+import { maskPhone, sanitizeName, sanitizeAge, cn } from '@/lib/utils';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -28,6 +30,7 @@ type Status = 'idle' | 'loading' | 'success' | 'error';
 export function RSVPForm() {
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [guardMsg, setGuardMsg] = useState<string | null>(null);
   const [sentPayload, setSentPayload] = useState<RsvpPayload | null>(null);
 
   const {
@@ -35,14 +38,13 @@ export function RSVPForm() {
     handleSubmit,
     control,
     watch,
-    setValue,
     formState: { errors },
   } = useForm<RsvpFormValues>({
     resolver: zodResolver(rsvpSchema),
     defaultValues: {
       nomeAdulto: '',
       telefone: '',
-      vaiComparecer: 'sim' as const,
+      responsavelVai: undefined as unknown as 'sim',
       convidados: [],
       observacoes: '',
     },
@@ -50,7 +52,15 @@ export function RSVPForm() {
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'convidados' });
-  const vai = watch('vaiComparecer');
+  const nomeAdulto = watch('nomeAdulto');
+  const responsavelVai = watch('responsavelVai');
+  const responsavelGoes = responsavelVai === 'sim';
+
+  useEffect(() => {
+    if (guardMsg && (responsavelGoes || fields.length > 0)) {
+      setGuardMsg(null);
+    }
+  }, [responsavelGoes, fields.length, guardMsg]);
 
   const addConvidado = (tipo: 'adulto' | 'crianca') => {
     append({ tipo, nome: '', idade: undefined });
@@ -65,6 +75,13 @@ export function RSVPForm() {
   };
 
   const onSubmit = async (values: RsvpFormValues) => {
+    if (values.responsavelVai === 'nao' && values.convidados.length === 0) {
+      setGuardMsg(
+        'Você marcou que não vai e não adicionou ninguém. Adicione pelo menos uma pessoa que vai à festa ou marque "Sim, vou".',
+      );
+      return;
+    }
+    setGuardMsg(null);
     setStatus('loading');
     setErrorMsg(null);
     const payload = toPayload(values);
@@ -87,6 +104,16 @@ export function RSVPForm() {
       </section>
     );
   }
+
+  const goingQuestionLabel = 'Você vai à festa?';
+
+  const guestsSectionTitle = responsavelGoes
+    ? 'Quem mais vai com você?'
+    : 'Quem vai à festa?';
+
+  const guestsHelper = responsavelGoes
+    ? 'Você já está incluído(a) — não precisa se adicionar de novo. Adicione apenas as outras pessoas que vão com você.'
+    : 'Você marcou que não vai. Adicione abaixo as pessoas que você está confirmando.';
 
   return (
     <section id="rsvp" className="relative overflow-hidden">
@@ -137,30 +164,27 @@ export function RSVPForm() {
               />
             </Field>
 
-            <Field label="Vai comparecer?" error={errors.vaiComparecer?.message}>
+            <Field label={goingQuestionLabel} error={errors.responsavelVai?.message}>
               <Controller
                 control={control}
-                name="vaiComparecer"
+                name="responsavelVai"
                 render={({ field }) => (
                   <RadioGroup
                     value={field.value}
-                    onValueChange={(v) => {
-                      field.onChange(v);
-                      if (v === 'nao') setValue('convidados', []);
-                    }}
+                    onValueChange={field.onChange}
                     className="grid grid-cols-2 gap-3"
                   >
                     <RadioOption value="sim" label="Sim, vou! 🎉" />
-                    <RadioOption value="nao" label="Não posso ir 🥲" />
+                    <RadioOption value="nao" label="Não vou, só cadastrando 🥲" />
                   </RadioGroup>
                 )}
               />
             </Field>
 
             <AnimatePresence initial={false}>
-              {vai === 'sim' && (
+              {responsavelVai !== undefined && (
                 <motion.div
-                  key="guests"
+                  key="guests-section"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
@@ -169,12 +193,45 @@ export function RSVPForm() {
                 >
                   <div className="pt-2 space-y-1">
                     <Label className="text-base font-display text-slate-800">
-                      Outros convidados (opcional)
+                      {guestsSectionTitle}
                     </Label>
-                    <p className="text-xs text-slate-500">
-                      Adicione quem vai com você. Você já está contado como responsável.
-                    </p>
+                    <p className="text-xs text-slate-500">{guestsHelper}</p>
                   </div>
+
+                  {nomeAdulto?.trim() && (
+                    <motion.div
+                      key="ghost-card"
+                      layout
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className={cn(
+                        'flex items-center gap-3 rounded-2xl border p-3.5',
+                        responsavelGoes
+                          ? 'border-emerald-200/80 bg-emerald-50/60'
+                          : 'border-amber-200/80 bg-amber-50/60',
+                      )}
+                    >
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/90 shadow-sm">
+                        {responsavelGoes ? (
+                          <Check className="h-4 w-4 text-emerald-600" strokeWidth={3} />
+                        ) : (
+                          <Ban className="h-4 w-4 text-amber-600" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 text-sm">
+                        <p className="truncate font-medium text-slate-800">
+                          {nomeAdulto.trim()}{' '}
+                          <span className="text-xs font-normal text-slate-500">(você)</span>
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          {responsavelGoes
+                            ? 'Já confirmada(o) na festa ✓'
+                            : 'Não vai — só está cadastrando outras pessoas'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <Button
@@ -184,7 +241,7 @@ export function RSVPForm() {
                       onClick={() => addConvidado('adulto')}
                     >
                       <User className="h-4 w-4" />
-                      + Adulto
+                      + Outro adulto
                     </Button>
                     <Button
                       type="button"
@@ -212,7 +269,7 @@ export function RSVPForm() {
                           initial={{ opacity: 0, y: -6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -6 }}
-                          className="rounded-2xl border border-rose-100 bg-white/60 p-4 space-y-3 scroll-mt-24"
+                          className="scroll-mt-24 space-y-3 rounded-2xl border border-rose-100 bg-white/60 p-4"
                         >
                           <div className="flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-lilac-500">
@@ -226,7 +283,7 @@ export function RSVPForm() {
                             <button
                               type="button"
                               onClick={() => remove(idx)}
-                              className="text-rose-400 hover:text-rose-600 transition-colors"
+                              className="text-rose-400 transition-colors hover:text-rose-600"
                               aria-label="Remover convidado"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -236,7 +293,7 @@ export function RSVPForm() {
                           <div
                             className={
                               isCrianca
-                                ? 'grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3'
+                                ? 'grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px]'
                                 : 'grid grid-cols-1 gap-3'
                             }
                           >
@@ -296,20 +353,27 @@ export function RSVPForm() {
                       );
                     })}
                   </AnimatePresence>
-
-                  <Field label="Observações (opcional)" error={errors.observacoes?.message}>
-                    <Textarea
-                      placeholder="Alergias, restrições alimentares, recado para os anfitriões..."
-                      {...register('observacoes')}
-                    />
-                  </Field>
                 </motion.div>
               )}
             </AnimatePresence>
 
+            {guardMsg && (
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                <p className="flex-1">{guardMsg}</p>
+              </div>
+            )}
+
+            <Field label="Observações (opcional)" error={errors.observacoes?.message}>
+              <Textarea
+                placeholder="Alergias, restrições alimentares, recado para os anfitriões..."
+                {...register('observacoes')}
+              />
+            </Field>
+
             {status === 'error' && errorMsg && (
               <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
                 <div className="flex-1">
                   <p className="font-medium">Não conseguimos enviar.</p>
                   <p className="text-rose-600/80">{errorMsg}</p>
