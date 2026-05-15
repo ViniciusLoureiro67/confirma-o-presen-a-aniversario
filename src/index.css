@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans text-slate-800 antialiased min-h-screen;
+    background-image: url('/ballroom-1.png');
+    background-size: cover;
+    background-position: center top;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-color: #1a0a12;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+
+  .section-title {
+    text-shadow:
+      0 2px 16px rgba(255, 255, 255, 0.95),
+      0 0 32px rgba(255, 245, 247, 0.7);
+  }
+
+  .section-eyebrow {
+    text-shadow: 0 1px 8px rgba(255, 255, 255, 0.9);
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-3xl bg-white/65 backdrop-blur-md border border-white/60 shadow-glass;
+  }
+
+  .section-pad {
+    @apply px-5 py-16 sm:py-20 md:py-24;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-2xl;
+  }
+}
