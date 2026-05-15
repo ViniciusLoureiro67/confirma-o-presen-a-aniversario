@@ -37,8 +37,8 @@ export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
           transition={{ delay: 0.6 }}
           className="mt-2 text-slate-600"
         >
-          Que delícia, <strong>{payload.nomeAdulto.split(' ')[0]}</strong>! Recebemos seu
-          RSVP. Mal podemos esperar.
+          Obrigado, <strong>{payload.nomeAdulto.split(' ')[0]}</strong>! Recebemos sua
+          confirmação. Mal podemos esperar para te ver no baile. 💛
         </motion.p>
 
         <motion.div
