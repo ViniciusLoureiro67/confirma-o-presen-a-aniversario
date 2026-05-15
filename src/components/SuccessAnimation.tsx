@@ -57,16 +57,16 @@ export function SuccessAnimation({ payload }: { payload: RsvpPayload }) {
           <p>
             <strong>Vai:</strong> {payload.vaiComparecer ? 'Sim' : 'Não'}
           </p>
-          {payload.vaiComparecer && payload.criancas.length > 0 && (
+          {payload.vaiComparecer && payload.convidados.length > 0 && (
             <div>
-              <strong>Crianças:</strong>
+              <strong>Convidados:</strong>
               <ul className="mt-1 list-disc list-inside text-slate-600">
-                {payload.criancas.map((c, i) => (
+                {payload.convidados.map((c, i) => (
                   <li key={i}>
-                    {c.nome}, {c.idade} anos
-                    {c.acompanhante && (
-                      <span className="text-slate-500"> (com {c.acompanhante})</span>
-                    )}
+                    {c.nome}
+                    {c.tipo === 'crianca' && c.idade !== undefined
+                      ? ` (criança, ${c.idade} anos)`
+                      : ' (adulto)'}
                   </li>
                 ))}
               </ul>

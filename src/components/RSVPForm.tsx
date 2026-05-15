@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Loader2, AlertCircle, CalendarPlus } from 'lucide-react';
+import {
+  Trash2,
+  Loader2,
+  AlertCircle,
+  CalendarPlus,
+  User,
+  Baby,
+} from 'lucide-react';
 
 import { rsvpSchema, toPayload, type RsvpFormValues, type RsvpPayload } from '@/lib/schema';
 import { submitRsvp } from '@/lib/api';
@@ -36,13 +43,13 @@ export function RSVPForm() {
       nomeAdulto: '',
       telefone: '',
       vaiComparecer: 'sim' as const,
-      criancas: [{ nome: '', idade: 0, acompanhante: '' }],
+      convidados: [],
       observacoes: '',
     },
     mode: 'onBlur',
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'criancas' });
+  const { fields, append, remove } = useFieldArray({ control, name: 'convidados' });
   const vai = watch('vaiComparecer');
 
   const onSubmit = async (values: RsvpFormValues) => {
@@ -71,7 +78,6 @@ export function RSVPForm() {
 
   return (
     <section id="rsvp" className="relative overflow-hidden">
-
       <motion.div
         className="relative section-pad container-narrow"
         initial={{ opacity: 0, y: 24 }}
@@ -87,7 +93,7 @@ export function RSVPForm() {
         </h2>
         <Card>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <Field label="Nome do adulto responsável" error={errors.nomeAdulto?.message}>
+            <Field label="Seu nome (responsável)" error={errors.nomeAdulto?.message}>
               <Controller
                 control={control}
                 name="nomeAdulto"
@@ -128,11 +134,7 @@ export function RSVPForm() {
                     value={field.value}
                     onValueChange={(v) => {
                       field.onChange(v);
-                      if (v === 'nao') {
-                        setValue('criancas', []);
-                      } else if (watch('criancas').length === 0) {
-                        setValue('criancas', [{ nome: '', idade: 0, acompanhante: '' }]);
-                      }
+                      if (v === 'nao') setValue('convidados', []);
                     }}
                     className="grid grid-cols-2 gap-3"
                   >
@@ -146,124 +148,137 @@ export function RSVPForm() {
             <AnimatePresence initial={false}>
               {vai === 'sim' && (
                 <motion.div
-                  key="kids"
+                  key="guests"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.25 }}
                   className="space-y-4 overflow-hidden"
                 >
-                  <div className="flex items-center justify-between pt-2">
+                  <div className="pt-2 space-y-1">
                     <Label className="text-base font-display text-slate-800">
-                      Crianças que vão à festa
+                      Outros convidados (opcional)
                     </Label>
+                    <p className="text-xs text-slate-500">
+                      Adicione quem vai com você. Você já está contado como responsável.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => append({ nome: '', idade: 0, acompanhante: '' })}
+                      onClick={() => append({ tipo: 'adulto', nome: '', idade: undefined })}
                     >
-                      <Plus className="h-4 w-4" />
-                      Adicionar
+                      <User className="h-4 w-4" />
+                      + Adulto
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ tipo: 'crianca', nome: '', idade: undefined })}
+                    >
+                      <Baby className="h-4 w-4" />
+                      + Criança
                     </Button>
                   </div>
 
                   <AnimatePresence initial={false}>
-                    {fields.map((f, idx) => (
-                      <motion.div
-                        key={f.id}
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        className="rounded-2xl border border-rose-100 bg-white/60 p-4 space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium uppercase tracking-wider text-lilac-500">
-                            Criança {idx + 1}
-                          </span>
-                          {fields.length > 1 && (
+                    {fields.map((f, idx) => {
+                      const tipo = watch(`convidados.${idx}.tipo`);
+                      const isCrianca = tipo === 'crianca';
+                      return (
+                        <motion.div
+                          key={f.id}
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          className="rounded-2xl border border-rose-100 bg-white/60 p-4 space-y-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-lilac-500">
+                              {isCrianca ? (
+                                <Baby className="h-3.5 w-3.5" />
+                              ) : (
+                                <User className="h-3.5 w-3.5" />
+                              )}
+                              {isCrianca ? 'Criança' : 'Adulto'} {idx + 1}
+                            </span>
                             <button
                               type="button"
                               onClick={() => remove(idx)}
                               className="text-rose-400 hover:text-rose-600 transition-colors"
-                              aria-label="Remover criança"
+                              aria-label="Remover convidado"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
-                          <Field
-                            label="Nome"
-                            error={errors.criancas?.[idx]?.nome?.message}
-                          >
-                            <Controller
-                              control={control}
-                              name={`criancas.${idx}.nome` as const}
-                              render={({ field }) => (
-                                <Input
-                                  placeholder="Nome da criança"
-                                  value={field.value}
-                                  onChange={(e) =>
-                                    field.onChange(sanitizeName(e.target.value))
-                                  }
-                                  onBlur={field.onBlur}
-                                />
-                              )}
-                            />
-                          </Field>
-                          <Field
-                            label="Idade"
-                            error={errors.criancas?.[idx]?.idade?.message}
-                          >
-                            <Controller
-                              control={control}
-                              name={`criancas.${idx}.idade` as const}
-                              render={({ field }) => (
-                                <Input
-                                  inputMode="numeric"
-                                  maxLength={2}
-                                  value={
-                                    field.value === 0 || field.value === undefined
-                                      ? ''
-                                      : String(field.value)
-                                  }
-                                  onChange={(e) => {
-                                    const clean = sanitizeAge(e.target.value);
-                                    field.onChange(clean === '' ? 0 : Number(clean));
-                                  }}
-                                  onBlur={field.onBlur}
-                                />
-                              )}
-                            />
-                          </Field>
-                        </div>
-                        <Field
-                          label="Acompanhante (opcional)"
-                          error={errors.criancas?.[idx]?.acompanhante?.message}
-                        >
-                          <Controller
-                            control={control}
-                            name={`criancas.${idx}.acompanhante` as const}
-                            render={({ field }) => (
-                              <Input
-                                placeholder="Nome de quem vai acompanhar a criança"
-                                value={field.value ?? ''}
-                                onChange={(e) =>
-                                  field.onChange(sanitizeName(e.target.value))
-                                }
-                                onBlur={field.onBlur}
-                              />
-                            )}
-                          />
-                        </Field>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                          </div>
 
-                  {errors.criancas?.message && (
-                    <p className="text-sm text-rose-500">{errors.criancas.message}</p>
-                  )}
+                          <div
+                            className={
+                              isCrianca
+                                ? 'grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3'
+                                : 'grid grid-cols-1 gap-3'
+                            }
+                          >
+                            <Field
+                              label="Nome"
+                              error={errors.convidados?.[idx]?.nome?.message}
+                            >
+                              <Controller
+                                control={control}
+                                name={`convidados.${idx}.nome` as const}
+                                render={({ field }) => (
+                                  <Input
+                                    placeholder={
+                                      isCrianca ? 'Nome da criança' : 'Nome do adulto'
+                                    }
+                                    value={field.value}
+                                    onChange={(e) =>
+                                      field.onChange(sanitizeName(e.target.value))
+                                    }
+                                    onBlur={field.onBlur}
+                                  />
+                                )}
+                              />
+                            </Field>
+                            {isCrianca && (
+                              <Field
+                                label="Idade"
+                                error={errors.convidados?.[idx]?.idade?.message}
+                              >
+                                <Controller
+                                  control={control}
+                                  name={`convidados.${idx}.idade` as const}
+                                  render={({ field }) => (
+                                    <Input
+                                      inputMode="numeric"
+                                      maxLength={2}
+                                      value={
+                                        field.value === undefined ||
+                                        Number.isNaN(field.value)
+                                          ? ''
+                                          : String(field.value)
+                                      }
+                                      onChange={(e) => {
+                                        const clean = sanitizeAge(e.target.value);
+                                        field.onChange(
+                                          clean === '' ? undefined : Number(clean),
+                                        );
+                                      }}
+                                      onBlur={field.onBlur}
+                                    />
+                                  )}
+                                />
+                              </Field>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
 
                   <Field label="Observações (opcional)" error={errors.observacoes?.message}>
                     <Textarea

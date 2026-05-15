@@ -6,13 +6,13 @@
  *
  * Colunas esperadas na aba "RSVP":
  *  A: Timestamp
- *  B: Nome Adulto
+ *  B: Nome Responsável
  *  C: Telefone
  *  D: Vai Comparecer
- *  E: Nome Criança
- *  F: Idade Criança
- *  G: Paga Buffet (idade > 6)
- *  H: Acompanhante
+ *  E: Tipo Convidado (Responsável | Adulto | Criança)
+ *  F: Nome Convidado
+ *  G: Idade
+ *  H: Paga Buffet (adultos sempre SIM, crianças idade > 6)
  *  I: Observações
  */
 
@@ -33,23 +33,41 @@ function doPost(e) {
     const telefone = String(payload.telefone || '').trim();
     const vaiComparecer = payload.vaiComparecer === true;
     const observacoes = String(payload.observacoes || '').trim();
-    const criancas = Array.isArray(payload.criancas) ? payload.criancas : [];
+    const convidados = Array.isArray(payload.convidados) ? payload.convidados : [];
 
     const rowsToAppend = [];
 
-    if (vaiComparecer && criancas.length > 0) {
-      criancas.forEach(function (c) {
-        const idade = Number(c.idade);
-        const pagaBuffet = idade > 6 ? 'SIM' : 'NÃO';
+    if (vaiComparecer) {
+      rowsToAppend.push([
+        timestamp,
+        nomeAdulto,
+        telefone,
+        'SIM',
+        'Responsável',
+        nomeAdulto,
+        '',
+        'SIM',
+        observacoes,
+      ]);
+
+      convidados.forEach(function (c) {
+        const tipo = c.tipo === 'crianca' ? 'Criança' : 'Adulto';
+        const idade = c.tipo === 'crianca' ? Number(c.idade) : null;
+        let pagaBuffet;
+        if (c.tipo === 'crianca') {
+          pagaBuffet = !isNaN(idade) && idade > 6 ? 'SIM' : 'NÃO';
+        } else {
+          pagaBuffet = 'SIM';
+        }
         rowsToAppend.push([
           timestamp,
           nomeAdulto,
           telefone,
           'SIM',
+          tipo,
           String(c.nome || '').trim(),
-          isNaN(idade) ? '' : idade,
+          idade !== null && !isNaN(idade) ? idade : '',
           pagaBuffet,
-          String(c.acompanhante || '').trim(),
           observacoes,
         ]);
       });
@@ -58,9 +76,9 @@ function doPost(e) {
         timestamp,
         nomeAdulto,
         telefone,
-        vaiComparecer ? 'SIM' : 'NÃO',
-        '',
-        '',
+        'NÃO',
+        'Responsável',
+        nomeAdulto,
         '',
         '',
         observacoes,
@@ -95,20 +113,24 @@ function sendNotificationEmail_(payload, totalRows) {
 
   try {
     const vai = payload.vaiComparecer ? 'SIM' : 'NÃO';
-    const criancas = Array.isArray(payload.criancas) ? payload.criancas : [];
+    const convidados = Array.isArray(payload.convidados) ? payload.convidados : [];
+    const adultos = convidados.filter(function (c) { return c.tipo === 'adulto'; });
+    const criancas = convidados.filter(function (c) { return c.tipo === 'crianca'; });
+
+    const listaAdultos = adultos.length
+      ? adultos.map(function (a) { return '  • ' + a.nome; }).join('\n')
+      : '  (nenhum)';
     const listaCriancas = criancas.length
-      ? criancas.map(function (c) {
-          const acomp = c.acompanhante ? ' (acompanhante: ' + c.acompanhante + ')' : '';
-          return '  • ' + c.nome + ' (' + c.idade + ' anos)' + acomp;
-        }).join('\n')
-      : '  (nenhuma criança informada)';
+      ? criancas.map(function (c) { return '  • ' + c.nome + ' (' + c.idade + ' anos)'; }).join('\n')
+      : '  (nenhuma)';
 
     const subject = '🎉 Novo RSVP Festa Isabela, ' + payload.nomeAdulto;
     const body =
       'Nova confirmação recebida:\n\n' +
       'Responsável: ' + payload.nomeAdulto + '\n' +
       'Telefone: ' + payload.telefone + '\n' +
-      'Vai comparecer: ' + vai + '\n' +
+      'Vai comparecer: ' + vai + '\n\n' +
+      'Outros adultos:\n' + listaAdultos + '\n\n' +
       'Crianças:\n' + listaCriancas + '\n\n' +
       'Observações: ' + (payload.observacoes || '(nenhuma)') + '\n\n' +
       'Linhas gravadas na planilha: ' + totalRows;

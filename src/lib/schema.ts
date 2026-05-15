@@ -17,9 +17,10 @@ export const rsvpSchema = z
     vaiComparecer: z.enum(['sim', 'nao'], {
       required_error: 'Selecione uma opção.',
     }),
-    criancas: z
+    convidados: z
       .array(
         z.object({
+          tipo: z.enum(['adulto', 'crianca']),
           nome: z
             .string()
             .trim()
@@ -27,15 +28,10 @@ export const rsvpSchema = z
             .regex(nameRegex, NAME_MSG),
           idade: z
             .coerce
-            .number({ invalid_type_error: 'Informe a idade.' })
-            .int('Use anos completos.')
-            .min(0, 'Idade inválida.')
-            .max(17, 'Idade máxima: 17 anos.'),
-          acompanhante: z
-            .string()
-            .trim()
-            .max(80, 'Nome muito longo.')
-            .refine((v) => v === '' || nameRegex.test(v), NAME_MSG)
+            .number()
+            .int()
+            .min(0)
+            .max(17)
             .optional(),
         }),
       )
@@ -43,22 +39,39 @@ export const rsvpSchema = z
     observacoes: z.string().trim().max(500, 'Máximo 500 caracteres.').optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.vaiComparecer === 'sim' && data.criancas.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['criancas'],
-        message: 'Adicione pelo menos uma criança.',
-      });
-    }
+    if (data.vaiComparecer !== 'sim') return;
+    data.convidados.forEach((c, idx) => {
+      if (c.tipo === 'crianca') {
+        if (c.idade === undefined || Number.isNaN(c.idade)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['convidados', idx, 'idade'],
+            message: 'Informe a idade da criança.',
+          });
+        } else if (c.idade < 0 || c.idade > 17) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['convidados', idx, 'idade'],
+            message: 'Idade entre 0 e 17.',
+          });
+        }
+      }
+    });
   });
 
 export type RsvpFormValues = z.infer<typeof rsvpSchema>;
+
+export type RsvpConvidado = {
+  tipo: 'adulto' | 'crianca';
+  nome: string;
+  idade?: number;
+};
 
 export type RsvpPayload = {
   nomeAdulto: string;
   telefone: string;
   vaiComparecer: boolean;
-  criancas: { nome: string; idade: number; acompanhante: string }[];
+  convidados: RsvpConvidado[];
   observacoes: string;
 };
 
@@ -68,11 +81,13 @@ export function toPayload(values: RsvpFormValues): RsvpPayload {
     nomeAdulto: values.nomeAdulto.trim(),
     telefone: values.telefone.trim(),
     vaiComparecer: vai,
-    criancas: vai
-      ? values.criancas.map((c) => ({
+    convidados: vai
+      ? values.convidados.map((c) => ({
+          tipo: c.tipo,
           nome: c.nome.trim(),
-          idade: c.idade,
-          acompanhante: (c.acompanhante ?? '').trim(),
+          ...(c.tipo === 'crianca' && c.idade !== undefined
+            ? { idade: c.idade }
+            : {}),
         }))
       : [],
     observacoes: (values.observacoes ?? '').trim(),

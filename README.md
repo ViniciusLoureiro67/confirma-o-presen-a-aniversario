@@ -107,7 +107,7 @@ npm run preview
 
    | A | B | C | D | E | F | G | H | I |
    |---|---|---|---|---|---|---|---|---|
-   | Timestamp | Nome Adulto | Telefone | Vai Comparecer | Nome Criança | Idade Criança | Paga Buffet (idade > 6) | Acompanhante | Observações |
+   | Timestamp | Nome Responsável | Telefone | Vai Comparecer | Tipo Convidado | Nome Convidado | Idade | Paga Buffet | Observações |
 
 ### 2. Colar o Apps Script
 
